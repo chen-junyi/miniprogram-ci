@@ -1,8 +1,30 @@
 const ci = require('miniprogram-ci');
-
 /* 项目配置 */
 const projectConfig = require('./project.config.json');
-const versionConfig = require('./version.config.json');
+const version = require('./package.json').version
+const fs = require('fs')
+const [, , ref, desc] = process.argv
+const { exec } = require('child_process');
+const path = require('path');
+
+// 同步push的分支代码
+function getLatestBranch(branch = ref) {
+    return exec(`git checkout '${branch}' && git pull`,
+        function (error) {
+            if (error !== null) {
+                console.log('exec error: ' + error);
+            }
+        })
+}
+
+// 根据分支改写环境变量文件，实现分支和环境统一
+function writeEnvFile() {
+    return fs.writeFileSync('./miniprogram/env.js', `export const env = '${ref}'`, err => {
+        if (err) {
+            console.log('自动写入app.json文件失败，请手动填写，并检查错误');
+        }
+    });
+}
 
 const project = new ci.Project({
     appid: projectConfig.appid,
@@ -12,7 +34,7 @@ const project = new ci.Project({
     ignores: ['node_modules/**/*'],
 });
 
-async function upload({ version = '0.0.0', desc = 'test' }) {
+async function upload({ version, desc }) {
     return await ci.upload({
         project,
         version,
@@ -26,7 +48,7 @@ async function upload({ version = '0.0.0', desc = 'test' }) {
     })
 }
 
-async function preview({ version = '0.0.0', versionDesc = 'test' }) {
+async function preview({ version, desc }) {
     return await ci.upload({
         project,
         desc: 'hello', // 此备注将显示在“小程序助手”开发版列表中
@@ -41,4 +63,11 @@ async function preview({ version = '0.0.0', versionDesc = 'test' }) {
     })
 }
 
-console.log(upload(versionConfig))
+async function start() {
+    await getLatestBranch()
+    await writeEnvFile()
+    await upload({ version, desc: `${desc} ${ref}` })
+    console.log('upload success')
+}
+
+start()
