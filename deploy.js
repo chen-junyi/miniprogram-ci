@@ -5,7 +5,6 @@ const version = require('./package.json').version
 const fs = require('fs')
 const [, , ref, desc] = process.argv
 const { exec } = require('child_process');
-const path = require('path');
 
 // 同步push的分支代码
 function getLatestBranch(branch = ref) {
@@ -21,7 +20,7 @@ function getLatestBranch(branch = ref) {
 function writeEnvFile() {
     return fs.writeFileSync('./miniprogram/env.js', `export const env = '${ref}'`, err => {
         if (err) {
-            console.log('自动写入app.json文件失败，请手动填写，并检查错误');
+            console.log(err, '写入变量文件失败');
         }
     });
 }
@@ -66,7 +65,7 @@ async function preview({ version, desc }) {
 async function start() {
     await getLatestBranch()
     await writeEnvFile()
-    await upload({ version, desc: `${desc} ${ref}` })
+    await upload({ version, desc: `${desc} 环境：${ref}` })
     console.log('upload success')
 }
 
