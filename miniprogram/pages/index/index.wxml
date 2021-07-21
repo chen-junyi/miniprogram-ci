@@ -20,5 +20,6 @@
   <view class="usermotto">
     <text class="user-motto">{{motto}}</text>
     <text class="user-motto">测试CI</text>
+    <text class="user-motto">测试CI1</text>
   </view>
 </view>
