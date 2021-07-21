@@ -1,5 +1,4 @@
 const ci = require('miniprogram-ci');
-/* 项目配置 */
 const projectConfig = require('./project.config.json');
 const version = require('./package.json').version
 const fs = require('fs')
@@ -9,10 +8,12 @@ const { exec } = require('child_process');
 // 同步push的分支代码
 function getLatestBranch(branch = ref) {
     return exec(`git checkout '${branch}' && git pull`,
-        function (error) {
+        function (error, stdout, stderr) {
             if (error !== null) {
-                console.log('exec error: ' + error);
+                console.error('exec error: ' + error);
             }
+            console.log(stdout, 'stdout')
+            console.log(stderr, 'stderr')
         })
 }
 
@@ -21,6 +22,8 @@ function writeEnvFile() {
     return fs.writeFileSync('./miniprogram/env.js', `export const env = '${ref}'`, err => {
         if (err) {
             console.log(err, '写入变量文件失败');
+        } else {
+            console.log('修改变量文件成功');
         }
     });
 }
@@ -32,6 +35,14 @@ const project = new ci.Project({
     privateKeyPath: './private.upload.key',
     ignores: ['node_modules/**/*'],
 });
+
+// 在有需要的时候构建npm
+async function packNpm() {
+    return await ci.packNpm(project, {
+        ignores: ['pack_npm_ignore_list'],
+        reporter: (infos) => { console.log(infos) }
+    })
+}
 
 async function upload({ version, desc }) {
     return await ci.upload({
@@ -47,7 +58,7 @@ async function upload({ version, desc }) {
     })
 }
 
-async function preview({ version, desc }) {
+async function preview() {
     return await ci.upload({
         project,
         desc: 'hello', // 此备注将显示在“小程序助手”开发版列表中
